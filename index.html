@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunSkeleton — a governed AI experiment skeleton</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 720px; padding: 0 1rem; line-height: 1.55; color: #1a1a2e; }
+  h1 { margin-bottom: .2rem; }
+  .sub { color: #555; margin-top: 0; }
+  .card { border: 1px solid #ddd; border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .card a { font-size: 1.15rem; font-weight: 600; }
+  code { background: #f2f2f7; padding: .1rem .35rem; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>RunSkeleton</h1>
+<p class="sub">A reusable skeleton template for governed AI experiment runs — built with Kiro specs, steering and hooks. Kiroween 2026 · Skeleton Crew.</p>
+
+<div class="card">
+  <a href="apps/ledger-viewer/">App 1 — Experiment Ledger Viewer</a>
+  <p>Browse an append-only, hash-chained experiment ledger: proposals, admissions, gate verdicts, promotions and rollbacks.</p>
+</div>
+
+<div class="card">
+  <a href="apps/paired-eval-dashboard/">App 2 — Paired Evaluation Dashboard</a>
+  <p>Champion vs challenger, pair by pair: per-pair deltas, mean paired difference, and the promotion gate read-out.</p>
+</div>
+
+<p>The template itself is a zero-dependency Python CLI (<code>template/skeleton.py</code>) that initializes a governed run, records ledger entries, and verifies the hash chain. Full documentation is in the repository README.</p>
+</body>
+</html>
