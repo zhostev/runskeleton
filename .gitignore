@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local demo workspaces initialized from the template (the layout under
+# template/layout/ is the source of truth, not any live workspace)
+demo-workspace/
+
+# NOTE: .kiro/ is intentionally NOT ignored. Devpost/Kiroween rules require
+# the /.kiro directory (specs, steering, hooks) at the repository root.

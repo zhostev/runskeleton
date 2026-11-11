@@ -1,0 +1,1 @@
+{"budget":{"max_calls":300,"max_tokens":5000000,"max_wall_seconds":1800},"data_snapshot":"REPLACE_WITH_PINNED_SNAPSHOT_ID","eval_set":"dev","notes":"Frozen into each run folder at init. Edit the template, never a frozen copy.","sealed_eval_contact":false,"seed":42}

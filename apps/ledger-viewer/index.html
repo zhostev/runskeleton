@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunSkeleton — Ledger Viewer</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --txt:#e6e9ef; --dim:#9aa3b2; --acc:#7ee787; --bad:#ff7b72; --warn:#e3b341; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:var(--bg); color:var(--txt); }
+  header { padding:20px 24px 8px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; }
+  .stats { display:flex; gap:12px; flex-wrap:wrap; padding:16px 24px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 14px; min-width:120px; }
+  .stat b { display:block; font-size:20px; }
+  .stat span { color:var(--dim); font-size:12px; }
+  .filters { display:flex; gap:10px; flex-wrap:wrap; padding:0 24px 16px; }
+  select, input { background:var(--panel); color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font:inherit; font-size:13px; }
+  input { flex:1; min-width:200px; }
+  .wrap { padding:0 24px 28px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:600; background:#12151b; }
+  tr:last-child td { border-bottom:none; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; border:1px solid var(--line); }
+  .admitted, .promoted { color:var(--acc); border-color:var(--acc); }
+  .rejected, .rolled_back { color:var(--bad); border-color:var(--bad); }
+  .hash { color:var(--dim); }
+  .empty { color:var(--dim); padding:18px; text-align:center; }
+  footer { color:var(--dim); font-size:12px; padding:0 24px 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗂️ RunSkeleton — Ledger Viewer</h1>
+  <div class="sub">Append-only experiment ledger (sample data, shaped exactly like <code>ledger.jsonl</code> output). Read-only: this viewer never writes to the ledger.</div>
+</header>
+
+<section class="stats" id="stats"></section>
+
+<section class="filters">
+  <select id="f-event"><option value="">All events</option></select>
+  <select id="f-verdict">
+    <option value="">All verdicts</option>
+    <option>admitted</option><option>rejected</option>
+    <option>promoted</option><option>rolled_back</option>
+  </select>
+  <input id="f-search" type="search" placeholder="Search run ID, hypothesis, actor…">
+</section>
+
+<div class="wrap">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Timestamp (UTC)</th><th>Run</th><th>Event</th><th>Actor</th><th>Details</th><th>Hash</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" hidden>No entries match the current filters.</div>
+</div>
+
+<footer>Demo app 1 of RunSkeleton (Kiroween 2026, Skeleton Crew). Swap the embedded <code>LEDGER</code> array for a real <code>ledger.jsonl</code> export to use it on a live workspace.</footer>
+
+<script>
+const LEDGER = [
+  {seq:1,  timestamp:"2026-11-08T09:00:00Z", run_id:"run-20261108-001", event:"run_proposed",  actor:"proposer", data:{hypothesis:"Recipe v4 (longer cosine schedule) beats v3 on held-out."}, prev_hash:"GENESIS", entry_hash:"a91f04c2d7"},
+  {seq:2,  timestamp:"2026-11-08T09:00:04Z", run_id:"run-20261108-001", event:"gate_verdict",  actor:"gate",     data:{gate:"admission", verdict:"admitted"}, prev_hash:"a91f04c2d7", entry_hash:"4be0771aa0"},
+  {seq:3,  timestamp:"2026-11-08T09:01:10Z", run_id:"run-20261108-001", event:"run_started",   actor:"runner",   data:{snapshot:"d2", seed:42}, prev_hash:"4be0771aa0", entry_hash:"c8105de931"},
+  {seq:4,  timestamp:"2026-11-08T11:42:51Z", run_id:"run-20261108-001", event:"run_completed", actor:"runner",   data:{dev_score:0.884, wall_seconds:9701}, prev_hash:"c8105de931", entry_hash:"77aa10f3b9"},
+  {seq:5,  timestamp:"2026-11-08T11:43:02Z", run_id:"run-20261108-001", event:"gate_verdict",  actor:"gate",     data:{gate:"promotion", verdict:"promoted", mean_delta:"+0.013"}, prev_hash:"77aa10f3b9", entry_hash:"e2c9b51d08"},
+  {seq:6,  timestamp:"2026-11-09T08:15:00Z", run_id:"run-20261109-001", event:"run_proposed",  actor:"proposer", data:{hypothesis:"Augmentation mix B improves robustness without hurting accuracy."}, prev_hash:"e2c9b51d08", entry_hash:"5d1a77c340"},
+  {seq:7,  timestamp:"2026-11-09T08:15:03Z", run_id:"run-20261109-001", event:"gate_verdict",  actor:"gate",     data:{gate:"admission", verdict:"rejected", reason:"data_snapshot d1 is stale; active snapshot is d2"}, prev_hash:"5d1a77c340", entry_hash:"98fe02b6c1"},
+  {seq:8,  timestamp:"2026-11-09T08:20:41Z", run_id:"run-20261109-002", event:"run_proposed",  actor:"proposer", data:{hypothesis:"Augmentation mix B improves robustness without hurting accuracy."}, prev_hash:"98fe02b6c1", entry_hash:"b3d6e8127f"},
+  {seq:9,  timestamp:"2026-11-09T08:20:45Z", run_id:"run-20261109-002", event:"gate_verdict",  actor:"gate",     data:{gate:"admission", verdict:"admitted"}, prev_hash:"b3d6e8127f", entry_hash:"0ac41d9e55"},
+  {seq:10, timestamp:"2026-11-09T13:57:19Z", run_id:"run-20261109-002", event:"run_completed", actor:"runner",   data:{dev_score:0.861, wall_seconds:20458}, prev_hash:"0ac41d9e55", entry_hash:"d47b90aa12"},
+  {seq:11, timestamp:"2026-11-09T13:57:30Z", run_id:"run-20261109-002", event:"gate_verdict",  actor:"gate",     data:{gate:"promotion", verdict:"rolled_back", mean_delta:"-0.006"}, prev_hash:"d47b90aa12", entry_hash:"61f0c3d8a4"},
+  {seq:12, timestamp:"2026-11-10T10:05:00Z", run_id:"run-20261110-001", event:"run_proposed",  actor:"proposer", data:{hypothesis:"Skeleton template (specs+hooks) reduces unrecorded side experiments to zero."}, prev_hash:"61f0c3d8a4", entry_hash:"f09e1b72cd"},
+  {seq:13, timestamp:"2026-11-10T10:05:05Z", run_id:"run-20261110-001", event:"gate_verdict",  actor:"gate",     data:{gate:"admission", verdict:"admitted"}, prev_hash:"f09e1b72cd", entry_hash:"2b8aa6e049"}
+];
+
+const $ = id => document.getElementById(id);
+const events = [...new Set(LEDGER.map(e => e.event))];
+events.forEach(ev => { const o = document.createElement("option"); o.textContent = ev; $("f-event").appendChild(o); });
+
+function renderStats(rows) {
+  const runs = new Set(LEDGER.map(e => e.run_id)).size;
+  const verdicts = LEDGER.filter(e => e.event === "gate_verdict").length;
+  const promoted = LEDGER.filter(e => e.data.verdict === "promoted").length;
+  $("stats").innerHTML = [
+    [LEDGER.length, "ledger entries"], [runs, "runs proposed"],
+    [verdicts, "gate verdicts"], [promoted, "promotions"], [rows.length, "entries shown"]
+  ].map(([n, label]) => `<div class="stat"><b>${n}</b><span>${label}</span></div>`).join("");
+}
+
+function details(e) {
+  const d = e.data || {};
+  if (d.hypothesis) return "“" + d.hypothesis + "”";
+  if (d.verdict) return `gate: ${d.gate} → <span class="pill ${d.verdict}">${d.verdict}</span>` + (d.reason ? ` (${d.reason})` : "") + (d.mean_delta ? ` · mean Δ ${d.mean_delta}` : "");
+  return Object.entries(d).map(([k, v]) => `${k}=${v}`).join(", ");
+}
+
+function render() {
+  const ev = $("f-event").value, vd = $("f-verdict").value, q = $("f-search").value.toLowerCase();
+  const rows = LEDGER.filter(e =>
+    (!ev || e.event === ev) &&
+    (!vd || e.data.verdict === vd) &&
+    (!q || JSON.stringify(e).toLowerCase().includes(q)));
+  $("rows").innerHTML = rows.map(e =>
+    `<tr><td>${e.seq}</td><td>${e.timestamp}</td><td>${e.run_id}</td><td>${e.event}</td><td>${e.actor}</td><td>${details(e)}</td><td class="hash">${e.entry_hash}…</td></tr>`).join("");
+  $("empty").hidden = rows.length > 0;
+  renderStats(rows);
+}
+["f-event", "f-verdict", "f-search"].forEach(id => $(id).addEventListener("input", render));
+render();
+</script>
+</body>
+</html>
